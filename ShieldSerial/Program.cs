@@ -65,7 +65,7 @@ namespace devMobile.IoT.SeeedLoRaE5.ShieldSerial
 
          Debug.WriteLine("devMobile.IoT.SeeedLoRaE5.ShieldSerial starting");
 
-         Debug.WriteLine(Windows.Devices.SerialCommunication.SerialDevice.GetDeviceSelector());
+         Debug.WriteLine($"Ports available: {Windows.Devices.SerialCommunication.SerialDevice.GetDeviceSelector()}");
 
          try
          {
