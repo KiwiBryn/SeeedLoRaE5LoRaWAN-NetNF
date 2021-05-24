@@ -7,6 +7,10 @@ Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "00.ShieldSerial", "ShieldSe
 EndProject
 Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "01.NetworkJoinOTAA", "NetworkJoinOTAA\01.NetworkJoinOTAA.nfproj", "{EC9DFF2A-4998-42DC-9F09-BD8CC2324573}"
 EndProject
+Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "SeeedE5LoRaWANDevice", "SeeedE5LoRaWANDevice\SeeedE5LoRaWANDevice.nfproj", "{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}"
+EndProject
+Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "SeeedE5LoRaWANDeviceClient", "SeeedE5LoRaWANDeviceClient\SeeedE5LoRaWANDeviceClient.nfproj", "{A15885FB-3246-48FE-836B-2170E43FEA1F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +29,18 @@ Global
 		{EC9DFF2A-4998-42DC-9F09-BD8CC2324573}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC9DFF2A-4998-42DC-9F09-BD8CC2324573}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EC9DFF2A-4998-42DC-9F09-BD8CC2324573}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8FEFCFA-AD74-4FA4-A3F1-12B95B0DE1FA}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A15885FB-3246-48FE-836B-2170E43FEA1F}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
