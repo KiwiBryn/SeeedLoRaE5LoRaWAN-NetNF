@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// must have one of OTAA or ABP in nfprroj file
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
 {

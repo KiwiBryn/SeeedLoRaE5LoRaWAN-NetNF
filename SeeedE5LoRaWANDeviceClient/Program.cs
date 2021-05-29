@@ -13,17 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// must have one of 
-//    PAYLOAD_BCD or PAYLOAD_BYTES defined
+// Must have one of following options defined in the nfproj file
+//    PAYLOAD_BCD or PAYLOAD_BYTES
 //    OTAA or ABP
+//    ST_STM32F769I_DISCOVERY or (workin on other device support)
 //
-// For confirmed messages define CONFIRMED
-// nanoff --target ST_STM32F769I_DISCOVERY --update
+// Optional definitions
+//    CONFIRMED For confirmed messages
+//    RESET for retun device to factory settings
+//
+// To download nanoBooter and nanoCLR to device
+//    nanoff --target ST_STM32F769I_DISCOVERY --update
 //---------------------------------------------------------------------------------
-#define ST_STM32F769I_DISCOVERY
-#define RESET
-#define OTAA
-#define PAYLOAD_BCD
 namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
 {
    using System;
@@ -73,7 +74,6 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
                device.OnMessageConfirmation += OnMessageConfirmationHandler;
 #endif
                device.OnReceiveMessage += OnReceiveMessageHandler;
-
 #if RESET
                Debug.WriteLine($"{DateTime.UtcNow:hh:mm:ss} Reset");
                result = device.Reset();
@@ -100,7 +100,7 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
                   return;
                }
 
-               Debug.WriteLine($"{DateTime.UtcNow:hh:mm:ss} Port");
+               Debug.WriteLine($"{DateTime.UtcNow:hh:mm:ss} Port {MessagePort}");
                result = device.Port(MessagePort);
                if (result != Result.Success)
                {
@@ -120,7 +120,7 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
 
 #if ABP
                Debug.WriteLine($"{DateTime.UtcNow:hh:mm:ss} ABP");
-               result = device.AbpInitialise(DevAddress, NwksKey, AppsKey);
+               result = device.AbpInitialise(Config.DevAddress, Config.NwksKey, Config.AppsKey);
                if (result != Result.Success)
                {
                   Debug.WriteLine($"ABP Initialise failed {result}");
