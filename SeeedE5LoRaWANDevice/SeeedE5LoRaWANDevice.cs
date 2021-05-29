@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-#define DIAGNOSTICS
 namespace devMobile.IoT.LoRaWan
 {
    using System;
@@ -85,7 +84,7 @@ namespace devMobile.IoT.LoRaWan
       private SerialDevice serialDevice = null;
       private TimeSpan ReadTimeoutDefault = new TimeSpan(0, 0, 1);
       private TimeSpan WriteTimeoutDefault = new TimeSpan(0, 0, 2);
-      DataWriter outputDataWriter;
+      private DataWriter outputDataWriter;
 
       private string atCommandExpectedResponse;
       private readonly AutoResetEvent atExpectedEvent;
