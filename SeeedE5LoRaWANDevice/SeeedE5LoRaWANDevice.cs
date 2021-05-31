@@ -125,22 +125,6 @@ namespace devMobile.IoT.LoRaWan
          serialDevice.DataBits = 8;
          serialDevice.WatchChar = '\n';
 
-         atCommandExpectedResponse = string.Empty;
-
-         serialDevice.DataReceived += SerialDevice_DataReceived;
-
-         // clear out the RX buffer
-         /*
-         uint bytesRead = inputDataReader.Load(128);
-         while (bytesRead > 0)
-         {
-            string response = inputDataReader.ReadString(bytesRead);
-            Debug.WriteLine($"RX :{response}");
-
-            bytesRead = inputDataReader.Load(128);
-         }
-         */
-
          if (readTimeout == default)
          {
             serialDevice.ReadTimeout = ReadTimeoutDefault;
@@ -151,7 +135,14 @@ namespace devMobile.IoT.LoRaWan
             serialDevice.WriteTimeout = WriteTimeoutDefault;
          }
 
+         atCommandExpectedResponse = string.Empty;
+
          outputDataWriter = new DataWriter(serialDevice.OutputStream);
+
+         serialDevice.DataReceived += SerialDevice_DataReceived;
+
+         // Ignoring the return from this is intentional
+         this.SendCommand("+LOWPOWER: WAKEUP", "AT+LOWPOWER: WAKEUP", SendTimeoutMinimum);
 
          return Result.Success;
       }
