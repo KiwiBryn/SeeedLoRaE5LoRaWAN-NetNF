@@ -104,7 +104,7 @@ namespace devMobile.IoT.LoRaWan
          this.atExpectedEvent = new AutoResetEvent(false);
       }
 
-      public Result Initialise(string serialPortId, uint baudRate, SerialParity serialParity, ushort dataBits, SerialStopBitCount stopBitCount, TimeSpan readTimeout = default, TimeSpan writeTimeout = default)
+      public Result Initialise(string serialPortId, uint baudRate, SerialParity serialParity = SerialParity.None, ushort dataBits = 8, SerialStopBitCount stopBitCount = SerialStopBitCount.One, TimeSpan readTimeout = default, TimeSpan writeTimeout = default)
       {
          if ((serialPortId == null) || (serialPortId == ""))
          {
@@ -119,10 +119,10 @@ namespace devMobile.IoT.LoRaWan
 
          // set parameters
          serialDevice.BaudRate = baudRate;
-         serialDevice.Parity = SerialParity.None;
-         serialDevice.StopBits = SerialStopBitCount.One;
+         serialDevice.Parity = serialParity;
+         serialDevice.StopBits = stopBitCount;
          serialDevice.Handshake = SerialHandshake.None;
-         serialDevice.DataBits = 8;
+         serialDevice.DataBits = dataBits;
          serialDevice.WatchChar = '\n';
 
          if (readTimeout == default)

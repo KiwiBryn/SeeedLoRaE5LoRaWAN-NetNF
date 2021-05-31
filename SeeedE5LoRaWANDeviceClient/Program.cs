@@ -63,7 +63,7 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
          {
             using (SeeedE5LoRaWANDevice device = new SeeedE5LoRaWANDevice())
             {
-               result = device.Initialise(SerialPortId, 9600, SerialParity.None, 8, SerialStopBitCount.One);
+               result = device.Initialise(SerialPortId, 9600);
                if (result != Result.Success)
                {
                   Debug.WriteLine($"Initialise failed {result}");
