@@ -5,6 +5,7 @@ The repo has the source code for the series of blog posts written as I built thi
 
 01. [Basic connectivity](http://blog.devmobile.co.nz/2021/05/24/nanoframework-seeed-lora-e5-lorawan-library-part1//)
 02. [Nasty OTAA connect](http://blog.devmobile.co.nz/2021/05/25/nanoframework-seeed-lora-e5-lorawan-library-part2/)
-03.
+03. [Seeedstudio LoRa E5 Wakeup](http://blog.devmobile.co.nz/2021/05/31/seeed-lora-e5-wakeup/)
+04. [nanoFramework Seeed LoRa-E5 on Github](https://blog.devmobile.co.nz/2021/06/12/nanoframework-seeed-lora-e5-on-github/)
 
 ![Seeedstudio LoRa-E5 EVB conencted to nanoFramework STM32F769I_DISCOVERY device](SeeedLora-E5.nanoFramwork.ST_STM32F769I_DISCOVERY.JPG)
