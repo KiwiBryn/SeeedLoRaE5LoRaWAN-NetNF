@@ -67,10 +67,10 @@ namespace devMobile.IoT.LoRaWan
       public const ushort MessageBcdMaximumLength = 484;
 
       public readonly TimeSpan SendTimeoutMinimum = new TimeSpan(0, 0, 1);
-      public readonly TimeSpan SendTimeoutMaximum = new TimeSpan(0, 0, 10);
+      public readonly TimeSpan SendTimeoutMaximum = new TimeSpan(0, 0, 30);
 
       public readonly TimeSpan JoinTimeoutMinimum = new TimeSpan(0, 0, 1);
-      public readonly TimeSpan JoinTimeoutMaximum = new TimeSpan(0, 0, 20);
+      public readonly TimeSpan JoinTimeoutMaximum = new TimeSpan(0, 0, 25);
 
       private const string EndOfLineMarker = "\r\n";
       private const string ErrorMarker = "ERROR";
@@ -90,7 +90,7 @@ namespace devMobile.IoT.LoRaWan
       private readonly AutoResetEvent atExpectedEvent;
       private StringBuilder response;
       private Result result;
-      private byte DownlinkPort = 0;
+      private byte DownlinkPort = 0 ;
       private string DownlinkPayload = null;
 
       public delegate void MessageConfirmationHandler(int rssi, double snr);
@@ -282,7 +282,7 @@ namespace devMobile.IoT.LoRaWan
          }
 
          // Thanks AndrewL for pointing out delay required in section 4.30 LOWPOWER
-         Thread.Sleep(5);
+         Thread.Sleep(10);
 
          return Result.Success;
       }
