@@ -14,15 +14,14 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
+//#define DIAGNOSTICS
 namespace devMobile.IoT.LoRaWan
 {
    using System;
    using System.Diagnostics;
+   using System.IO.Ports;
    using System.Text;
    using System.Threading;
-
-   using Windows.Devices.SerialCommunication;
-   using Windows.Storage.Streams;
 
    public enum LoRaClass
    {
@@ -72,7 +71,6 @@ namespace devMobile.IoT.LoRaWan
       public readonly TimeSpan JoinTimeoutMinimum = new TimeSpan(0, 0, 1);
       public readonly TimeSpan JoinTimeoutMaximum = new TimeSpan(0, 0, 25);
 
-      private const string EndOfLineMarker = "\r\n";
       private const string ErrorMarker = "ERROR";
       private const string JoinFailedMarker = "Join failed";
       private const string DownlinkPayloadMarker = "+MSGHEX: PORT: ";
@@ -81,10 +79,7 @@ namespace devMobile.IoT.LoRaWan
       private const string DownlinkConfirmedMetricsMarker = "+CMSGHEX: RXWIN";
       private readonly TimeSpan CommandTimeoutDefault = new TimeSpan(0, 0, 5);
 
-      private SerialDevice serialDevice = null;
-      private TimeSpan ReadTimeoutDefault = new TimeSpan(0, 0, 1);
-      private TimeSpan WriteTimeoutDefault = new TimeSpan(0, 0, 2);
-      private DataWriter outputDataWriter;
+      private SerialPort serialDevice = null;
 
       private string atCommandExpectedResponse;
       private readonly AutoResetEvent atExpectedEvent;
@@ -104,7 +99,7 @@ namespace devMobile.IoT.LoRaWan
          this.atExpectedEvent = new AutoResetEvent(false);
       }
 
-      public Result Initialise(string serialPortId, uint baudRate, SerialParity serialParity = SerialParity.None, ushort dataBits = 8, SerialStopBitCount stopBitCount = SerialStopBitCount.One, TimeSpan readTimeout = default, TimeSpan writeTimeout = default)
+      public Result Initialise(string serialPortId, int baudRate, Parity serialParity = Parity.None, ushort dataBits = 8, StopBits stopBitCount = StopBits.One)
       {
          if ((serialPortId == null) || (serialPortId == ""))
          {
@@ -115,29 +110,21 @@ namespace devMobile.IoT.LoRaWan
             throw new ArgumentException("Invalid BaudRate", "baudRate");
          }
 
-         serialDevice = SerialDevice.FromId(serialPortId);
+         serialDevice = new SerialPort(serialPortId);
 
          // set parameters
          serialDevice.BaudRate = baudRate;
          serialDevice.Parity = serialParity;
          serialDevice.StopBits = stopBitCount;
-         serialDevice.Handshake = SerialHandshake.None;
+         serialDevice.Handshake = Handshake.None;
          serialDevice.DataBits = dataBits;
-         serialDevice.WatchChar = '\n';
-
-         if (readTimeout == default)
-         {
-            serialDevice.ReadTimeout = ReadTimeoutDefault;
-         }
-
-         if (writeTimeout == default)
-         {
-            serialDevice.WriteTimeout = WriteTimeoutDefault;
-         }
+         serialDevice.NewLine = "\r\n";
 
          atCommandExpectedResponse = string.Empty;
 
-         outputDataWriter = new DataWriter(serialDevice.OutputStream);
+         serialDevice.Open();
+
+         serialDevice.WatchChar = '\n';
 
          serialDevice.DataReceived += SerialDevice_DataReceived;
 
@@ -574,8 +561,7 @@ namespace devMobile.IoT.LoRaWan
 
          this.atCommandExpectedResponse = expectedResponse;
 
-         outputDataWriter.WriteString(command + EndOfLineMarker);
-         outputDataWriter.Store();
+         serialDevice.WriteLine(command);
 
          this.atExpectedEvent.Reset();
 
@@ -636,99 +622,87 @@ namespace devMobile.IoT.LoRaWan
             return;
          }
 
-         SerialDevice serialDevice = (SerialDevice)sender;
+         SerialPort serialDevice = (SerialPort)sender;
 
-         using (DataReader inputDataReader = new DataReader(serialDevice.InputStream))
+         response.Append(serialDevice.ReadExisting());
+
+         int eolPosition;
+         do
          {
-            inputDataReader.InputStreamOptions = InputStreamOptions.Partial;
+            // extract a line
+            eolPosition = response.ToString().IndexOf(serialDevice.NewLine);
 
-            // read all available bytes from the Serial Device input stream
-            var bytesRead = inputDataReader.Load(serialDevice.BytesToRead);
-            if (bytesRead == 0)
+            if (eolPosition != -1)
             {
-               return;
-            }
-
-            response.Append(inputDataReader.ReadString(bytesRead));
-
-            int eolPosition;
-            do
-            {
-               // extract a line
-               eolPosition = response.ToString().IndexOf(EndOfLineMarker);
-
-               if (eolPosition != -1)
-               {
-                  string line = response.ToString(0, eolPosition);
-                  response = response.Remove(0, eolPosition + EndOfLineMarker.Length);
+               string line = response.ToString(0, eolPosition);
+               response = response.Remove(0, eolPosition + serialDevice.NewLine.Length);
 #if DIAGNOSTICS
-                  Debug.WriteLine($" Line :{line} ResponseExpected:{atCommandExpectedResponse} Response:{response}");
+               Debug.WriteLine($" Line :{line} ResponseExpected:{atCommandExpectedResponse} Response:{response}");
 #endif
-                  int joinFailIndex = line.IndexOf(JoinFailedMarker);
-                  if (joinFailIndex != -1)
+               int joinFailIndex = line.IndexOf(JoinFailedMarker);
+               if (joinFailIndex != -1)
+               {
+                  result = Result.JoinFailed;
+                  atExpectedEvent.Set();
+               }
+
+               int errorIndex = line.IndexOf(ErrorMarker);
+               if (errorIndex != -1)
+               {
+                  string errorNumber = line.Substring(errorIndex + ErrorMarker.Length);
+
+                  result = ModemErrorParser(errorNumber.Trim());
+                  atExpectedEvent.Set();
+               }
+
+               if (atCommandExpectedResponse != string.Empty)
+               {
+                  int successIndex = line.IndexOf(atCommandExpectedResponse);
+                  if (successIndex != -1)
                   {
-                     result = Result.JoinFailed;
+                     result = Result.Success;
                      atExpectedEvent.Set();
                   }
+               }
 
-                  int errorIndex = line.IndexOf(ErrorMarker);
-                  if (errorIndex != -1)
+               // If a downlink message payload then stored ready for metrics
+               if ((line.IndexOf(DownlinkPayloadMarker) != -1) || (line.IndexOf(DownlinkConfirmedPayloadMarker) != -1))
+               {
+                  string receivedMessageLine = line.Substring(DownlinkPayloadMarker.Length);
+
+                  string[] fields = receivedMessageLine.Split(':', ';');
+                  DownlinkPort = byte.Parse(fields[0]);
+                  DownlinkPayload = fields[2].Trim(' ', '"');
+               }
+
+               if ((line.IndexOf(DownlinkMetricsMarker) != -1) || (line.IndexOf(DownlinkConfirmedMetricsMarker) != -1))
+               {
+                  string receivedMessageLine = line.Substring(DownlinkMetricsMarker.Length);
+
+                  string[] fields = receivedMessageLine.Split(' ', ',');
+                  int rssi = int.Parse(fields[3]);
+                  double snr = double.Parse(fields[6]);
+
+                  if (DownlinkPort != 0)
                   {
-                     string errorNumber = line.Substring(errorIndex + ErrorMarker.Length);
-
-                     result = ModemErrorParser(errorNumber.Trim());
-                     atExpectedEvent.Set();
-                  }
-
-                  if (atCommandExpectedResponse != string.Empty)
-                  {
-                     int successIndex = line.IndexOf(atCommandExpectedResponse);
-                     if (successIndex != -1)
+                     if (this.OnReceiveMessage != null)
                      {
-                        result = Result.Success;
-                        atExpectedEvent.Set();
+                        OnReceiveMessage(DownlinkPort, rssi, snr, DownlinkPayload);
                      }
+                     DownlinkPort = 0;
                   }
 
-                  // If a downlink message payload then stored ready for metrics
-                  if ((line.IndexOf(DownlinkPayloadMarker) != -1) || (line.IndexOf(DownlinkConfirmedPayloadMarker) != -1))
+                  if (line.IndexOf(DownlinkConfirmedMetricsMarker) != -1)
                   {
-                     string receivedMessageLine = line.Substring(DownlinkPayloadMarker.Length);
-
-                     string[] fields = receivedMessageLine.Split(':', ';');
-                     DownlinkPort = byte.Parse(fields[0]);
-                     DownlinkPayload = fields[2].Trim(' ', '"');
-                  }
-
-                  if ((line.IndexOf(DownlinkMetricsMarker) != -1) || (line.IndexOf(DownlinkConfirmedMetricsMarker) != -1))
-                  {
-                     string receivedMessageLine = line.Substring(DownlinkMetricsMarker.Length);
-
-                     string[] fields = receivedMessageLine.Split(' ', ',');
-                     int rssi = int.Parse(fields[3]);
-                     double snr = double.Parse(fields[6]);
-
-                     if (DownlinkPort != 0)
+                     if (this.OnMessageConfirmation != null)
                      {
-                        if (this.OnReceiveMessage != null)
-                        {
-                           OnReceiveMessage(DownlinkPort, rssi, snr, DownlinkPayload);
-                        }
-                        DownlinkPort = 0;
-                     }
-
-                     if (line.IndexOf(DownlinkConfirmedMetricsMarker) != -1)
-                     {
-                        if (this.OnMessageConfirmation != null)
-                        {
-                           OnMessageConfirmation(rssi, snr);
-                        }
+                        OnMessageConfirmation(rssi, snr);
                      }
                   }
                }
             }
-            while (eolPosition != -1);
          }
+         while (eolPosition != -1);
       }
 
       // Utility functions for clients for processing messages payloads to be send, ands messages payloads received.

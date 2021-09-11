@@ -31,8 +31,6 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
    using System.Threading;
    using System.Diagnostics;
 
-   using Windows.Devices.SerialCommunication;
-
    using devMobile.IoT.LoRaWan;
 
    public class Program
@@ -191,10 +189,12 @@ namespace devMobile.IoT.SeeedE5LoRaWANDeviceClient
          }
       }
 
+#if CONFIRMED
       static void OnMessageConfirmationHandler(int rssi, double snr)
       {
          Debug.WriteLine($"{DateTime.UtcNow:hh:mm:ss} Send Confirm RSSI:{rssi} SNR:{snr}");
       }
+#endif
 
       static void OnReceiveMessageHandler(int port, int rssi, double snr, string payloadBcd)
       {
