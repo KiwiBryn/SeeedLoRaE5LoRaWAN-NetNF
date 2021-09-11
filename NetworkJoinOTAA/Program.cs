@@ -19,10 +19,8 @@ namespace devMobile.IoT.SeeedLoRaE5.NetworkJoinOTAA
 {
    using System;
    using System.Diagnostics;
+   using System.IO.Ports;
    using System.Threading;
-
-   using Windows.Devices.SerialCommunication;
-   using Windows.Storage.Streams;
 
    public class Program
    {
@@ -39,150 +37,114 @@ namespace devMobile.IoT.SeeedLoRaE5.NetworkJoinOTAA
 
       public static void Main()
       {
-         SerialDevice serialDevice;
-         uint bytesWritten;
-         uint txByteCount;
-         uint bytesRead;
+         string response;
 
          Debug.WriteLine("devMobile.IoT.SeeedLoRaE5.NetworkJoinOTAA starting");
 
-         Debug.WriteLine($"Ports available: {Windows.Devices.SerialCommunication.SerialDevice.GetDeviceSelector()}");
+         Debug.Write("Ports:");
+         foreach (string port in SerialPort.GetPortNames())
+         {
+            Debug.Write($" {port}");
+         }
+         Debug.WriteLine("");
 
          try
          {
-            serialDevice = SerialDevice.FromId(SerialPortId);
-
-            // set parameters
-            serialDevice.BaudRate = 9600;
-            serialDevice.Parity = SerialParity.None;
-            serialDevice.StopBits = SerialStopBitCount.One;
-            serialDevice.Handshake = SerialHandshake.None;
-            serialDevice.DataBits = 8;
-
-            serialDevice.ReadTimeout = new TimeSpan(0, 0, 5);
-            serialDevice.WriteTimeout = new TimeSpan(0, 0, 4);
-
-            DataWriter outputDataWriter = new DataWriter(serialDevice.OutputStream);
-            DataReader inputDataReader = new DataReader(serialDevice.InputStream);
-
-            // set a watch char to be notified when it's available in the input stream
-            serialDevice.WatchChar = '\n';
-
-            // clear out the RX buffer
-            bytesRead = inputDataReader.Load(128);
-            while (bytesRead > 0)
+            using (SerialPort serialDevice = new SerialPort(SerialPortId))
             {
-               string response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
+               // set parameters
+               serialDevice.BaudRate = 9600;
+               serialDevice.Parity = Parity.None;
+               serialDevice.StopBits = StopBits.One;
+               serialDevice.Handshake = Handshake.None;
+               serialDevice.DataBits = 8;
 
-               bytesRead = inputDataReader.Load(128);
-            }
+               serialDevice.ReadTimeout = 10000;
 
-            // Set the Region to AS923
-            bytesWritten = outputDataWriter.WriteString("AT+DR=AS923\r\n");
-            Debug.WriteLine($"TX: region {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               serialDevice.NewLine = "\r\n";
 
-            // Read the response
-            bytesRead = inputDataReader.Load(128);
-            if (bytesRead > 0)
-            {
-               String response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
-            }
+               serialDevice.Open();
 
-            // Set the Join mode
-            bytesWritten = outputDataWriter.WriteString("AT+MODE=LWOTAA\r\n");
-            Debug.WriteLine($"TX: mode {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // clear out the RX buffer
+               serialDevice.ReadExisting();
+               response = serialDevice.ReadExisting();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
+               Thread.Sleep(500);
 
-            // Read the response
-            bytesRead = inputDataReader.Load(128);
-            if (bytesRead > 0)
-            {
-               string response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
-            }
+               // Set the Region to AS923
+               serialDevice.WriteLine("AT+DR=AS923\r\n");
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Set the appEUI
-            bytesWritten = outputDataWriter.WriteString($"AT+ID=AppEui,\"{AppEui}\"\r\n");
-            Debug.WriteLine($"TX: AppEui {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // Set the Join mode
+               serialDevice.WriteLine("AT +MODE=LWOTAA\r\n");
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Read the response
-            bytesRead = inputDataReader.Load(128);
-            if (bytesRead > 0)
-            {
-               String response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
-            }
+               // Set the appEUI
+               serialDevice.WriteLine($"AT+ID=AppEui,\"{AppEui}\"\r\n");
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Set the appKey
-            bytesWritten = outputDataWriter.WriteString($"AT+KEY=APPKEY,{AppKey}\r\n");
-            Debug.WriteLine($"TX: AppKey {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // Set the appKey
+               serialDevice.WriteLine($"AT+KEY=APPKEY,{AppKey}\r\n");
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Read the response
-            bytesRead = inputDataReader.Load(128);
-            if (bytesRead > 0)
-            {
-               String response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
-            }
+               // Set the port number
+               serialDevice.WriteLine($"AT+PORT={MessagePort}\r\n");
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Set the port number
-            bytesWritten = outputDataWriter.WriteString($"AT+PORT={MessagePort}\r\n");
-            Debug.WriteLine($"TX: port {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // Join the network
+               serialDevice.WriteLine("AT+JOIN\r\n");
 
-            // Read the response
-            bytesRead = inputDataReader.Load(128);
-            if (bytesRead > 0)
-            {
-               String response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
-            }
+               // Join start
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Join the network
-            bytesWritten = outputDataWriter.WriteString("AT+JOIN\r\n");
-            Debug.WriteLine($"TX: join {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
-            txByteCount = outputDataWriter.Store();
-            Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // JOIN normal
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            // Read the response, need loop as multi line response
-            bytesRead = inputDataReader.Load(128);
-            while (bytesRead > 0)
-            {
-               String response = inputDataReader.ReadString(bytesRead);
-               Debug.WriteLine($"RX :{response}");
+               Thread.Sleep(5000);
 
-               bytesRead = inputDataReader.Load(128);
-            }
+               // network joined
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-            while (true)
-            {
-               bytesWritten = outputDataWriter.WriteString($"AT+MSGHEX=\"{Payload}\"\r\n");
-               Debug.WriteLine($"TX: send {outputDataWriter.UnstoredBufferLength} bytes to output stream.");
+               // Net ID
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-               txByteCount = outputDataWriter.Store();
-               Debug.WriteLine($"TX: {txByteCount} bytes via {serialDevice.PortName}");
+               // Join done
+               response = serialDevice.ReadLine();
+               Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
 
-               // Read the response, need loop as multi line response
-               bytesRead = inputDataReader.Load(128);
-               while (bytesRead > 0)
+               while (true)
                {
-                  String response = inputDataReader.ReadString(bytesRead);
-                  Debug.WriteLine($"RX :{response}");
+                  Debug.WriteLine("Sending");
 
-                  bytesRead = inputDataReader.Load(128);
+                  serialDevice.WriteLine($"AT+MSGHEX=\"{Payload}\"\r\n");
+
+                  // Start
+                  response = serialDevice.ReadLine();
+                  Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
+
+                  // Fpending
+                  response = serialDevice.ReadLine();
+                  Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
+
+                  //Read metrics
+                  response = serialDevice.ReadLine();
+                  Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
+
+                  //Done
+                  response = serialDevice.ReadLine();
+                  Debug.WriteLine($"Response :{response.Trim()} bytes:{response.Length}");
+
+                  Thread.Sleep(30000);
                }
-
-               Thread.Sleep(300000);
             }
          }
          catch (Exception ex)
