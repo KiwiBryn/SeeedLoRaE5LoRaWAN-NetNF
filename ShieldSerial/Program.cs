@@ -103,7 +103,7 @@ namespace devMobile.IoT.SeeedLoRaE5.ShieldSerial
 
                while (true)
                {
-                  serialDevice.WriteLine("AT+VER\r\n");
+                  serialDevice.WriteLine("AT+VER");
 
 #if SERIAL_SYNC_READ
                   string response = serialDevice.ReadLine();
